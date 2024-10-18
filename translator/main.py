@@ -41,7 +41,7 @@ class Voice_To_Voice_Session:
             on_close=self.on_close,
             )
         
-        # transcriber.configure_end_utterance_silence_threshold(500)
+        # self.transcriber.configure_end_utterance_silence_threshold(1000)
         self.transcriber.connect()
         
         microphone_stream = aai.extras.MicrophoneStream(sample_rate=16_000)
@@ -56,33 +56,31 @@ class Voice_To_Voice_Session:
         self.stop_transcription()
         # translate text
         
-        translated_text = self.translate_text(partial_transcribed_text)
+        # translated_text = self.translate_text(partial_transcribed_text)
+        translated_text = partial_transcribed_text # workaround
+        # print(translated_text)
         
         text_buffer = ''
         full_text = ''
         for chunk in translated_text:
-            print({"chunk": chunk})
+            # print({"chunk": chunk})
             text_buffer += chunk
-            if(text_buffer.endswith('.')):
-                audio_stream = self.client.generate(text=text_buffer, model='eleven_turbo_v2_5', stream=True)
-            print(text_buffer, end='\n', flush=True)
+            
+        if(text_buffer.endswith('.')):
+            audio_stream = self.client.generate(text=full_text, model='eleven_turbo_v2_5', stream=True)
+            # print(text_buffer, end='\n', flush=True)
             stream(audio_stream)
             full_text += text_buffer
             text_buffer = ''
             
         if text_buffer:
             audio_stream = self.client.generate(text=text_buffer, model='eleven_turbo_v2_5', stream=True)
-            print(text_buffer, end='\n', flush=True)
+            # print(text_buffer, end='\n', flush=True)
             stream(audio_stream)
             full_text += text_buffer
             
         self.start_transcription()
         
-        # vocalize translation
-        
-        
-        return
-
     def stop_transcription(self):
             self.transcriber.close()
             self.transcriber = None
@@ -96,10 +94,12 @@ class Voice_To_Voice_Session:
             return
 
         if isinstance(transcript, aai.RealtimeFinalTranscript):
+            self.generate_ai_voice(transcript.text)
             print(transcript.text)
         else:
             print(transcript.text, end="\r")
-            self.generate_ai_voice(transcript.text)
+            # self.generate_ai_voice(transcript.text)
+            # print(' ')
 
     def on_error(self, error: aai.RealtimeError):
         #print("An error occurred:", error)
